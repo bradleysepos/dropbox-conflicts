@@ -1,0 +1,175 @@
+#!/bin/bash
+# dropbox-conflicts - find Dropbox conflicts
+#
+# Copyright 2014 Bradley Sepos
+# Released under the MIT License. See LICENSE for details.
+#
+# Requires Mac OS X 10.8 or greater. Notifications require terminal-notifier,
+# install with 'sudo gem install terminal-notifier'.
+#
+# Version 1.0 (2014-02-05)
+# Initial release.
+
+set -e
+set -u
+
+SELF="$0"
+SELF_NAME=$(basename "$SELF")
+
+# Handle arguments
+NOTIFY=false
+NOTIFY_FORCE=false
+QUIET=false
+HELP="\
+usage: $SELF_NAME [-hv]
+       $SELF_NAME [-fnq] [-d path]
+where:
+   -h  display this help text
+   -v  display version information
+   -d  specify directory (default DROPBOX_DIR or ~/Dropbox)
+   -f  force display notification (implies -n)
+   -n  enable notification
+   -q  quiet mode, do not print result"
+VERSION="\
+dropbox-conflicts 1.0"
+while getopts ":d:fhnqv" OPT
+do
+    case "${OPT}"
+    in
+        d)
+            # Specify directory manually
+            DROPBOX_DIR="$OPTARG"
+            ;;
+        f)
+            # Force display notification, implies -n
+            NOTIFY=true
+            NOTIFY_FORCE=true
+            ;;
+        h)
+            # Print help and exit
+            echo -e "$HELP"
+            exit 0
+            ;;
+        n)
+            # Enable notification via terminal-notifier
+            # Displays if one of the following is true:
+            #     - Results have changed since last notification
+            #     - Forced with -f
+            NOTIFY=true
+            ;;
+        q)
+            # Quiet mode, do not print result
+            QUIET=true
+            ;;
+        v)
+            # Print version and exit
+            echo -e "$VERSION"
+            exit 0
+            ;;
+        \?)
+            # Illegal option specified
+            ERROR="$SELF_NAME: illegal option: -$OPTARG"
+            echo "$ERROR" >&2 && syslog -s -l error "$ERROR"
+            echo -e "$HELP"
+            exit 1
+            ;;
+    esac
+done
+
+# Verify path
+DROPBOX_DIR=${DROPBOX_DIR:-"$HOME/Dropbox"}
+if [ ! -d "$DROPBOX_DIR" ]; then
+    # Directory does not exist
+    ERROR="$SELF_NAME: $DROPBOX_DIR: no such directory"
+    echo "$ERROR" >&2 && syslog -s -l error "$ERROR"
+    exit 1
+fi
+
+# Find conflicts
+CONFLICTS=$(find -L "$DROPBOX_DIR" | grep -v -e ".dropbox.cache" -e ".Trash" | grep "conflicted copy")
+CONFLICTS_HASH=$(md5 -qs "$CONFLICTS")
+CONFLICTS_COUNT=$(echo "$CONFLICTS" | sed '/^[[:space:]]*$/d' | wc -l | sed -nE 's/^[[:space:]]*([0-9]+)$/\1/p')
+
+if [ "$CONFLICTS_COUNT" -gt 0 ]; then
+
+    # Print conflicts
+    if ! $QUIET; then
+        echo "$CONFLICTS"
+    fi
+    
+    # Set up some vars
+    CONFLICTS_NAMES=$(echo -n "$CONFLICTS" | sed 's/^.*\///')
+    CONFLICTS_INLINE=$(echo -n "$CONFLICTS_NAMES" | tr "\n" ", " | sed 's/.\{1\}$//')
+    CONFLICTS_INFLECTION="conflicts"
+    if [ "$CONFLICTS_COUNT" -eq 1 ]; then
+        CONFLICTS_INFLECTION="conflict"
+    fi
+    CONFLICTS_MESSAGE="$CONFLICTS_COUNT $CONFLICTS_INFLECTION found in $DROPBOX_DIR"
+    CONFLICTS_MESSAGE_SHORT="$CONFLICTS_COUNT found"
+
+    # Notification
+    if $NOTIFY; then
+        if hash terminal-notifier 2>/dev/null; then
+            # Check hash
+            CONFLICTS_HASH_CHANGED=false
+            DROPBOX_CONFLICTS_HASH=$(launchctl getenv DROPBOX_CONFLICTS_HASH)
+            DROPBOX_CONFLICTS_HASH=${DROPBOX_CONFLICTS_HASH:-""}
+            if [ "$CONFLICTS_HASH" != "$DROPBOX_CONFLICTS_HASH" ]; then
+                CONFLICTS_HASH_CHANGED=true
+            fi
+            if $CONFLICTS_HASH_CHANGED || $NOTIFY_FORCE; then
+                # Create saved search
+                SAVED_SEARCH=$(mktemp -q "/tmp/Dropbox Conflicts.XXXX" 2>/dev/null) || exit 1
+                mv -f "$SAVED_SEARCH" "$SAVED_SEARCH.savedSearch" 2>/dev/null || exit 1
+                SAVED_SEARCH="$SAVED_SEARCH.savedSearch"
+                if [ -w "$SAVED_SEARCH" ]; then
+                    # Saved search xml
+                    # Maybe a bit hackish, but avoids hardcoded directory
+                    echo '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CompatibleVersion</key><integer>1</integer><key>RawQuery</key><string>(true) &amp;&amp; (((kMDItemDisplayName = "*conflicted copy*"cd)))</string><key>SearchCriteria</key><dict><key>FXScopeArrayOfPaths</key><array><string>DROPBOX_DIR</string></array></dict></dict></plist>' | sed "s=DROPBOX_DIR=$DROPBOX_DIR=" > "$SAVED_SEARCH" 2>/dev/null
+                    # Lock file to prevent Finder from modifying it later
+                    chflags -f uchg "$SAVED_SEARCH" 2>/dev/null
+                fi
+                if [ -r "$SAVED_SEARCH" ] && [ -s "$SAVED_SEARCH" ]; then
+                    # Display notification
+                    terminal-notifier \
+                        -sender "com.getdropbox.dropbox" \
+                        -group "$SELF_NAME" \
+                        -title "Dropbox Conflicts" \
+                        -subtitle "Click to view in Finder..." \
+                        -message "$CONFLICTS_MESSAGE_SHORT: $CONFLICTS_INLINE" \
+                        -activate "com.apple.Finder" \
+                        -execute "open -a Finder.app \"$SAVED_SEARCH\"" \
+                        &>/dev/null
+                    # Remove old saved searches
+                    find -L "/tmp" -name "Dropbox Conflicts.*.savedSearch" -maxdepth 1 -mtime +1d -exec chflags -f nouchg {} \; -exec rm -f {} \; 2>/dev/null
+                else
+                    # Unable to create saved search, reference DROPBOX_DIR instead
+                    syslog -s -l notice "$SELF_NAME: Unable to create saved search"
+                    terminal-notifier \
+                        -sender "com.getdropbox.dropbox" \
+                        -group "$SELF_NAME" \
+                        -title "Dropbox Conflicts" \
+                        -subtitle "Click to open Dropbox..." \
+                        -message "$CONFLICTS_MESSAGE_SHORT: $CONFLICTS_INLINE" \
+                        -activate "com.apple.Finder" \
+                        -execute "open -a Finder.app \"$DROPBOX_DIR\"" \
+                        &>/dev/null
+                fi
+            else
+                # Nothing changed, exit quietly without re-notifying
+                exit 0
+            fi
+        else
+            # Missing terminal-notifier
+            ERROR="$SELF_NAME: terminal-notifier: command not found"
+            echo "$ERROR" >&2 && syslog -s -l error "$ERROR"
+            exit 1
+        fi
+    fi
+fi
+
+# Cache result hash
+launchctl setenv DROPBOX_CONFLICTS_HASH "$CONFLICTS_HASH"
+
+# Done
+exit 0
