@@ -10,7 +10,7 @@
 	<dict>
 		<key>FXScopeArrayOfPaths</key>
 		<array>
-			<string>DROPBOX_DIR</string>
+			<string>~/Dropbox</string>
 		</array>
 	</dict>
 </dict>

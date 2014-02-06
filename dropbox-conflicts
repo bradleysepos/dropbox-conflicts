@@ -125,7 +125,7 @@ if [ "$CONFLICTS_COUNT" -gt 0 ]; then
                 if [ -w "$SAVED_SEARCH" ]; then
                     # Saved search xml
                     # Maybe a bit hackish, but avoids hardcoded directory
-                    echo '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CompatibleVersion</key><integer>1</integer><key>RawQuery</key><string>(true) &amp;&amp; (((kMDItemDisplayName = "*conflicted copy*"cd)))</string><key>SearchCriteria</key><dict><key>FXScopeArrayOfPaths</key><array><string>DROPBOX_DIR</string></array></dict></dict></plist>' | sed "s=DROPBOX_DIR=$DROPBOX_DIR=" > "$SAVED_SEARCH" 2>/dev/null
+                    echo '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CompatibleVersion</key><integer>1</integer><key>RawQuery</key><string>(true) &amp;&amp; (((kMDItemDisplayName = "*conflicted copy*"cd)))</string><key>SearchCriteria</key><dict><key>FXScopeArrayOfPaths</key><array><string>~/Dropbox</string></array></dict></dict></plist>' | sed "s=~/Dropbox=$DROPBOX_DIR=" > "$SAVED_SEARCH" 2>/dev/null
                     # Lock file to prevent Finder from modifying it later
                     chflags -f uchg "$SAVED_SEARCH" 2>/dev/null
                 fi
