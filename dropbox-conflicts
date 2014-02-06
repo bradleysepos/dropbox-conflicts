@@ -7,7 +7,7 @@
 # Requires Mac OS X 10.8 or greater. Notifications require terminal-notifier,
 # install with 'sudo gem install terminal-notifier'.
 #
-# Version 1.0 (2014-02-05)
+# Version 1.0.0 (2014-02-05)
 # Initial release.
 
 set -e
@@ -31,7 +31,7 @@ where:
    -n  enable notification
    -q  quiet mode, do not print result"
 VERSION="\
-dropbox-conflicts 1.0"
+dropbox-conflicts 1.0.0"
 while getopts ":d:fhnqv" OPT
 do
     case "${OPT}"
