@@ -1,7 +1,7 @@
 #!/bin/bash
 # dropbox-conflicts - find Dropbox conflicts
 #
-# Copyright 2014 Bradley Sepos
+# Copyright 2016 Bradley Sepos
 # Released under the MIT License. See LICENSE for details.
 #
 # Requires Mac OS X 10.8 or greater. Notifications require terminal-notifier,
