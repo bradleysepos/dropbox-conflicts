@@ -95,7 +95,7 @@ With a little effort, you can automatically receive notifications when something
 
 To periodically run `dropbox-conflicts` in the background:
 
-1. Copy `com.bradleysepos.dropbox-conflicts.plist` from `Extras` to `~/Library/LaunchAgents`
+1. Copy `com.bradleysepos.dropbox-conflicts.plist` to `~/Library/LaunchAgents`
 2. Run `$ launchctl load ~/Library/LaunchAgents/com.bradleysepos.dropbox-conflicts.plist`
 
 The default is to check every 15 minutes (900 seconds) and can be customized by editing the `StartInterval` key.
