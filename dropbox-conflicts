@@ -3,12 +3,6 @@
 #
 # Copyright 2016 Bradley Sepos
 # Released under the MIT License. See LICENSE for details.
-#
-# Requires Mac OS X 10.8 or greater. Notifications require terminal-notifier,
-# install with 'sudo gem install terminal-notifier'.
-#
-# Version 1.0.0 (2014-02-05)
-# Initial release.
 
 set -e
 set -u
