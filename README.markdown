@@ -1,13 +1,13 @@
 dropbox-conflicts
 =================
 
-Find Dropbox conflicts. Requires Mac OS X 10.8 or greater.
+Find Dropbox files with conflicts. Requires Mac OS X 10.8 or greater.
 
 ## Introduction
 
 When a file in Dropbox is changed on two separate machines (e.g. two people simultaneously edit and save a shared document), Dropbox may not be able to sort out the differences. Rather than let one set of changes clobber the other, Dropbox preserves each machine's data by placing additional "conflicted copies" of the file in the same directory. A human must then inspect these conflicts and decide whether to keep, delete, or merge changes from the additional files.
 
-In short, `dropbox-conflicts` makes finding Dropbox conflicts easy and with the help of launchd, even automatic.
+`dropbox-conflicts` makes finding Dropbox files with conflicts easy and automatic.
 
 ## Installation
 
@@ -20,7 +20,7 @@ In short, `dropbox-conflicts` makes finding Dropbox conflicts easy and with the 
 Make sure `PATH` is properly set for both `bash` and launchd. One way of accomplishing this is to customize the following and add to `~/.bash_profile`:
 
 ```
-export PATH=$PATH:/another/path:/still/yet/another  
+export PATH=/custom/path:/another/custom/path:$PATH  
 launchctl setenv PATH $PATH
 ```
 
@@ -107,8 +107,6 @@ When notification is enabled, `dropbox-conflicts` creates a temporary Saved Sear
 ## Troubleshooting
 
 Problems with automatic notifications? Check your launchd environment with `$ launchctl getenv PATH`. See Installation for more.
-
-`dropbox-conflicts` returns exit code `0` (true) when no conflicts are found and no errors are encountered.
 
 ## License
 
