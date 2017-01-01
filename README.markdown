@@ -110,7 +110,7 @@ Problems with automatic notifications? Check your launchd environment with `$ la
 
 ## License
 
-Copyright 2016 Bradley Sepos  
+Copyright 2017 Bradley Sepos  
 Released under the MIT License. See [LICENSE] for details.
 
 [terminal-notifier]: https://github.com/alloy/terminal-notifier
